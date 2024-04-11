@@ -6,6 +6,9 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 
+#model import
+from .models import lorenz96_model,bernoulli_map
+
 
 @csrf_exempt
 def generate_and_save_tent_map(request):
@@ -146,3 +149,84 @@ def complex_squaring(z):
     real_part = z.real ** 2 - z.imag ** 2
     imag_part = 2 * z.real * z.imag
     return complex(real_part, imag_part)
+
+@csrf_exempt
+def generate_and_save_bernoulli_map(request):
+    if request.method == 'POST':
+        # JSON verisini al
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        # Harita oluşturma parametrelerini al
+        r = float(body.get('r'))
+        x0 = float(body.get('x0'))
+        num_iterations = int(body.get('num_iterations'))
+
+        # Bernoulli haritasını oluştur
+        x_values = [x0]
+        for _ in range(num_iterations):
+            x_next = bernoulli_map(x_values[-1], r)
+            x_values.append(x_next)
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'bernoulli_map.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plt.plot(x_values, 'b-', lw=0.5)
+        plt.title('Bernoulli Map: r = {}'.format(r))
+        plt.xlabel('Iteration')
+        plt.ylabel('Value')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+
+
+
+@csrf_exempt
+def generate_and_save_lorenz96_map(request):
+    if request.method == 'POST':
+        # JSON verisini al
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        # Model parametrelerini al
+        N = int(body.get('N', 40))  # Varsayılan olarak 40
+        F = float(body.get('F', 8.0))  # Varsayılan olarak 8.0
+        dt = float(body.get('dt', 0.01))  # Varsayılan olarak 0.01
+        num_steps = int(body.get('num_steps', 1000))  # Varsayılan olarak 1000
+
+        # Modeli çalıştır ve verileri sakla
+        data = lorenz96_model(N, F, dt, num_steps)
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'lorenz96_map.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plt.imshow(data, aspect='auto', cmap='jet')
+        plt.colorbar()
+        plt.title('Lorenz 96 Map')
+        plt.xlabel('Time Step')
+        plt.ylabel('Variable Index')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
