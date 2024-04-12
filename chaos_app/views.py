@@ -376,5 +376,134 @@ def generate_and_save_gingerbread_map(request):
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+    
+@csrf_exempt
+def generate_and_save_kuromato_sivashinsky_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
 
+        alpha = float(body.get('alpha'))
+        beta = float(body.get('beta'))
+        L = float(body.get('L'))
+        T = float(body.get('T'))
+        N = int(body.get('N'))
+
+        t, u = solve_kuramoto_sivashinsky(alpha, beta, L, T, N)
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'ks_map.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plot_solution(t, u, L, file_path)
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+    
+
+@csrf_exempt
+def generate_and_save_gauss_map(request):
+    if request.method == 'POST':
+        # JSON isteğini ayrıştır
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        # Parametreleri al
+        x0 = float(body.get('x0'))
+        r = float(body.get('r'))
+        iterations = int(body.get('iterations'))
+
+        # Gauss haritasını oluştur
+        sequence = [x0]
+        for _ in range(iterations - 1):  # İterasyonları gereksiz hesaplama yapmamak için ayarlayın
+            x0 = gauss_map(x0, r)
+            sequence.append(x0)
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'gauss_map.png')
+
+        # Dosyayı varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plt.plot(sequence, 'b-', linewidth=0.5)
+        plt.title('Gauss Map: r = {}'.format(r))
+        plt.xlabel('Iteration')
+        plt.ylabel('Value')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+def gauss_map(x, r):
+    return r * x * (1 - x)
+
+
+@csrf_exempt
+def generate_and_save_lotka_volterra_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        alpha = float(body.get('alpha'))
+        beta = float(body.get('beta'))
+        gamma = float(body.get('gamma'))
+        delta = float(body.get('delta'))
+        prey_initial = float(body.get('prey_initial'))
+        predator_initial = float(body.get('predator_initial'))
+
+        # Zaman noktaları
+        t = np.linspace(0, 100, 1000)
+
+        # Başlangıç koşulları
+        y0 = [prey_initial, predator_initial]
+
+        # Lotka-Volterra diferansiyel denklemleri
+        def model(y, t):
+            prey, predator = y
+            dydt = [alpha * prey - beta * prey * predator,
+                    gamma * prey * predator - delta * predator]
+            return dydt
+
+        # Diferansiyel denklemleri çöz
+        sol = odeint(model, y0, t)
+
+        # Dosya yolu
+        file_path = os.path.join('maps', 'tinkerbell_maps', 'lotka_volterra.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik
+        plt.figure(figsize=(10, 6))
+        plt.plot(t, sol[:, 0], label='Av Popülasyonu')
+        plt.plot(t, sol[:, 1], label='Yırtıcı Popülasyonu')
+        plt.xlabel('Zaman')
+        plt.ylabel('Popülasyon')
+        plt.title('Lotka-Volterra Modeli: Yırtıcı ve Av Popülasyonları')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
