@@ -507,3 +507,47 @@ def generate_and_save_lotka_volterra_map(request):
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
+@csrf_exempt
+def generate_and_save_logistic_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        r = float(body.get('r', 3.9))
+        x0 = float(body.get('x0', 0.5))
+        num_steps = int(body.get('num_steps', 100))
+
+        # Logistic map function
+        def logistic_map(r, x0, num_steps):
+            x = np.zeros(num_steps)
+            x[0] = x0
+            for i in range(1, num_steps):
+                x[i] = r * x[i - 1] * (1 - x[i - 1])
+            return x
+
+        # Calculate logistic map
+        population = logistic_map(r, x0, num_steps)
+
+        # File path
+        file_path = os.path.join('chaos_app', 'maps', 'logistic_map.png')
+
+        # If file exists, delete
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Plot and save to file
+        plt.figure(figsize=(8, 8))
+        plt.plot(population, 'b-', label='Logistic Haritası')
+        plt.title('Logistic Haritası (r={})'.format(r))
+        plt.xlabel('Adım')
+        plt.ylabel('Popülasyon Oranı')
+        plt.legend()
+        plt.savefig(file_path)
+        plt.close()
+
+        # Return URL of saved file
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)

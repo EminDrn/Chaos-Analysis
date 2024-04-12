@@ -13,5 +13,6 @@ urlpatterns = [
     path('api/poincare_map', views.poincare_map_view, name='poincare_map'),
     path('generate_tinkerbell_map/', views.generate_and_save_tinkerbell_map, name='generate_tinkerbell_map'),
     path('generate_gingerbread_map/', views.generate_and_save_gingerbread_map, name='generate_gingerbread_map'),
+    path('generate_logistic_map/', views.generate_and_save_logistic_map, name='generate_logistic_map'),
 ]
 
