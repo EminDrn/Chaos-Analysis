@@ -6,6 +6,7 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 
+
 #model import
 from .models import lorenz96_model,bernoulli_map
 
@@ -54,6 +55,55 @@ def tent_map(x, r):
     else:
         return r * (1 - x)
 
+@csrf_exempt
+def generate_and_save_tinkerbell_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        a = float(body.get('a'))
+        b = float(body.get('b'))
+        c = float(body.get('c'))
+        d = float(body.get('d'))
+        width = int(body.get('width', 100))
+        height = int(body.get('height', 100))
+        iterations = int(body.get('iterations', 10000))
+
+        # Generate Tinkerbell map
+        def tinkerbell_map(x, y):
+            xn = x ** 2 - y ** 2 + a * x + b * y
+            yn = 2 * x * y + c * x + d * y
+            return xn, yn
+
+        tinkerbell_map_array = np.zeros((width, height))
+
+        x, y = 0.1, 0.1
+        for _ in range(iterations):
+            x, y = tinkerbell_map(x, y)
+            ix, iy = int((x + 2) / 4 * width), int((y + 2) / 4 * height)
+            if 0 <= ix < width and 0 <= iy < height:
+                tinkerbell_map_array[iy, ix] += 1
+
+        # File path
+        file_path = os.path.join('chaos_app', 'maps', 'tinkerbell_map.png')
+
+        # If file exists, delete
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Plot and save to file
+        plt.imshow(tinkerbell_map_array, cmap='hot', origin='lower', extent=(-2, 2, -2, 2))
+        plt.title('Tinkerbell Haritası')
+        plt.colorbar(label='Ziyaret Sayısı')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Return URL of saved file
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
 @csrf_exempt
 def generate_and_save_logistic_map(request):
@@ -277,3 +327,54 @@ def poincare_map_view(request):
     # Oluşturulan dosyanın URL'ini döndür
     image_url = request.build_absolute_uri(settings.MEDIA_URL + 'maps/poincare_map.png')
     return JsonResponse({'url': image_url})
+
+
+@csrf_exempt
+def generate_and_save_gingerbread_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        iterations = int(body.get('iterations', 10000))
+        x_start = float(body.get('x_start', 0.1))
+        y_start = float(body.get('y_start', 0.1))
+
+        # Gingerbread map function
+        def gingerbread_map(x, y):
+            x_next = 1 - y + abs(x)
+            y_next = x
+            return x_next, y_next
+
+        x = x_start
+        y = y_start
+
+        x_points = [x]
+        y_points = [y]
+
+        for _ in range(iterations):
+            x, y = gingerbread_map(x, y)
+            x_points.append(x)
+            y_points.append(y)
+
+        # File path
+        file_path = os.path.join('chaos_app', 'maps', 'gingerbread_map.png')
+
+        # If file exists, delete
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Plot and save to file
+        plt.figure(figsize=(8, 8))
+        plt.plot(x_points, y_points, 'o-', markersize=1, alpha=0.5)
+        plt.title('Gingerbread Man Haritası')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Return URL of saved file
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+

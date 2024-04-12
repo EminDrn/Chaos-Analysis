@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-
 urlpatterns = [
 
     path('api/generate_and_save_tent_map/', views.generate_and_save_tent_map, name='generate_and_save_tent_map'),
@@ -12,6 +11,7 @@ urlpatterns = [
 
     path('api/lorenz_map', views.lorenz_map, name='lorenz_map'),
     path('api/poincare_map', views.poincare_map_view, name='poincare_map'),
-
+    path('generate_tinkerbell_map/', views.generate_and_save_tinkerbell_map, name='generate_tinkerbell_map'),
+    path('generate_gingerbread_map/', views.generate_and_save_gingerbread_map, name='generate_gingerbread_map'),
 ]
 
