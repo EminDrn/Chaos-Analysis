@@ -10,4 +10,8 @@ urlpatterns = [
     path('api/generate_and_save_bernoulli_map/', views.generate_and_save_bernoulli_map, name='generate_and_save_bernoulli_map'),
     path('api/generate_and_save_lorenz96_map/', views.generate_and_save_lorenz96_map, name='generate_and_save_lorenz96_map'),
 
+    path('api/lorenz_map', views.lorenz_map, name='lorenz_map'),
+    path('api/poincare_map', views.poincare_map_view, name='poincare_map'),
+
 ]
+

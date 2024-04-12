@@ -230,3 +230,50 @@ def generate_and_save_lorenz96_map(request):
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
+
+@csrf_exempt
+
+def lorenz_map(request):
+    # Lorenz çekicisini çiz
+    image_path = os.path.join(settings.MEDIA_ROOT, 'maps', 'map.png')
+    lorenz_plt()
+    
+    # Grafik dosyasını kaydet
+    plt.savefig(image_path)
+    plt.close()
+
+    # Oluşturulan dosyanın URL'ini döndür
+    image_url = request.build_absolute_uri(settings.MEDIA_URL + 'maps/map.png')
+    return JsonResponse({'url': image_url})
+
+
+@csrf_exempt
+def poincare_map(time_series, delay):
+    poincare_points = []
+    for i in range(len(time_series) - delay):
+        poincare_points.append([time_series[i], time_series[i + delay]])
+    poincare_points = np.array(poincare_points)
+    plt.figure(figsize=(8, 6))
+    plt.plot(poincare_points[:, 0], poincare_points[:, 1], 'bo', markersize=2)
+    plt.xlabel('x(n)')
+    plt.ylabel('x(n + {})'.format(delay))
+    plt.title('Poincaré Haritası')
+    plt.grid(True)
+    return plt
+
+def poincare_map_view(request):
+    t = np.arange(0, 100, 0.1)
+    time_series = np.sin(t)
+    delay = 10  # Gecikme sayısı
+
+    # Poincaré haritasını çiz
+    plt = poincare_map(time_series, delay)
+    
+    # Grafik dosyasını kaydet
+    image_path = os.path.join(settings.MEDIA_ROOT, 'maps', 'poincare_map.png')
+    plt.savefig(image_path)
+    plt.close()
+
+    # Oluşturulan dosyanın URL'ini döndür
+    image_url = request.build_absolute_uri(settings.MEDIA_URL + 'maps/poincare_map.png')
+    return JsonResponse({'url': image_url})
