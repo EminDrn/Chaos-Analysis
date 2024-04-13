@@ -1,11 +1,12 @@
 import json
 
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 #model import
 from .models import lorenz96_model,bernoulli_map
@@ -15,12 +16,12 @@ from .models import lorenz96_model,bernoulli_map
 def generate_and_save_tent_map(request):
     if request.method == 'POST':
         # Parse request body as JSON
+
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
-
-        x = float(body.get('x'))
-        r = float(body.get('r'))
-        iterations = int(body.get('iterations'))
+        x = float(body['formData'].get('x'))
+        r = float(body['formData'].get('r'))
+        iterations = int(body['formData'].get('iterations'))
 
         sequence = [x]
         for _ in range(iterations - 1):  # Adjust iterations to avoid redundant calculation
@@ -44,7 +45,7 @@ def generate_and_save_tent_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -62,13 +63,13 @@ def generate_and_save_tinkerbell_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        a = float(body.get('a'))
-        b = float(body.get('b'))
-        c = float(body.get('c'))
-        d = float(body.get('d'))
-        width = int(body.get('width', 100))
-        height = int(body.get('height', 100))
-        iterations = int(body.get('iterations', 10000))
+        a = float(body['formData'].get('a'))
+        b = float(body['formData'].get('b'))
+        c = float(body['formData'].get('c'))
+        d = float(body['formData'].get('d'))
+        width = int(body['formData'].get('width', 100))
+        height = int(body['formData'].get('height', 100))
+        iterations = int(body['formData'].get('iterations', 10000))
 
         # Generate Tinkerbell map
         def tinkerbell_map(x, y):
@@ -101,7 +102,7 @@ def generate_and_save_tinkerbell_map(request):
 
         # Return URL of saved file
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -112,9 +113,9 @@ def generate_and_save_logistic_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        r = float(body.get('r'))
-        x0 = float(body.get('x0'))
-        iterations = int(body.get('iterations'))
+        r = float(body['formData'].get('r'))
+        x0 = float(body['formData'].get('x0'))
+        iterations = int(body['formData'].get('iterations'))
 
         values = np.zeros(iterations + 1)
         values[0] = x0
@@ -139,7 +140,7 @@ def generate_and_save_logistic_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -156,9 +157,9 @@ def generate_and_save_complex_squaring_map(request):
         body = json.loads(body_unicode)
 
         # Harita oluşturma parametrelerini al
-        real_range = float(body.get('real_range'))
-        imag_range = float(body.get('imag_range'))
-        num_points = int(body.get('num_points'))
+        real_range = float(body['formData'].get('real_range'))
+        imag_range = float(body['formData'].get('imag_range'))
+        num_points = int(body['formData'].get('num_points'))
 
         # Karmaşık sayıları oluştur
         real_values = np.linspace(-real_range, real_range, num_points)
@@ -189,7 +190,7 @@ def generate_and_save_complex_squaring_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -208,9 +209,9 @@ def generate_and_save_bernoulli_map(request):
         body = json.loads(body_unicode)
 
         # Harita oluşturma parametrelerini al
-        r = float(body.get('r'))
-        x0 = float(body.get('x0'))
-        num_iterations = int(body.get('num_iterations'))
+        r = float(body['formData'].get('r'))
+        x0 = float(body['formData'].get('x0'))
+        num_iterations = int(body['formData'].get('num_iterations'))
 
         # Bernoulli haritasını oluştur
         x_values = [x0]
@@ -235,11 +236,9 @@ def generate_and_save_bernoulli_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
-
 
 
 @csrf_exempt
@@ -250,10 +249,10 @@ def generate_and_save_lorenz96_map(request):
         body = json.loads(body_unicode)
 
         # Model parametrelerini al
-        N = int(body.get('N', 40))  # Varsayılan olarak 40
-        F = float(body.get('F', 8.0))  # Varsayılan olarak 8.0
-        dt = float(body.get('dt', 0.01))  # Varsayılan olarak 0.01
-        num_steps = int(body.get('num_steps', 1000))  # Varsayılan olarak 1000
+        N = int(body['formData'].get('N', 40))  # Varsayılan olarak 40
+        F = float(body['formData'].get('F', 8.0))  # Varsayılan olarak 8.0
+        dt = float(body['formData'].get('dt', 0.01))  # Varsayılan olarak 0.01
+        num_steps = int(body['formData'].get('num_steps', 1000))  # Varsayılan olarak 1000
 
         # Modeli çalıştır ve verileri sakla
         data = lorenz96_model(N, F, dt, num_steps)
@@ -276,7 +275,7 @@ def generate_and_save_lorenz96_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -336,9 +335,9 @@ def generate_and_save_gingerbread_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        iterations = int(body.get('iterations', 10000))
-        x_start = float(body.get('x_start', 0.1))
-        y_start = float(body.get('y_start', 0.1))
+        iterations = int(body['formData'].get('iterations', 10000))
+        x_start = float(body['formData'].get('x_start', 0.1))
+        y_start = float(body['formData'].get('y_start', 0.1))
 
         # Gingerbread map function
         def gingerbread_map(x, y):
@@ -372,8 +371,7 @@ def generate_and_save_gingerbread_map(request):
         plt.close()
 
         # Return URL of saved file
-        plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
     
@@ -384,11 +382,11 @@ def generate_and_save_kuromato_sivashinsky_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        alpha = float(body.get('alpha'))
-        beta = float(body.get('beta'))
-        L = float(body.get('L'))
-        T = float(body.get('T'))
-        N = int(body.get('N'))
+        alpha = float(body['formData'].get('alpha'))
+        beta = float(body['formData'].get('beta'))
+        L = float(body['formData'].get('L'))
+        T = float(body['formData'].get('T'))
+        N = int(body['formData'].get('N'))
 
         t, u = solve_kuramoto_sivashinsky(alpha, beta, L, T, N)
 
@@ -404,7 +402,7 @@ def generate_and_save_kuromato_sivashinsky_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
     
@@ -417,9 +415,9 @@ def generate_and_save_gauss_map(request):
         body = json.loads(body_unicode)
 
         # Parametreleri al
-        x0 = float(body.get('x0'))
-        r = float(body.get('r'))
-        iterations = int(body.get('iterations'))
+        x0 = float(body['formData'].get('x0'))
+        r = float(body['formData'].get('r'))
+        iterations = int(body['formData'].get('iterations'))
 
         # Gauss haritasını oluştur
         sequence = [x0]
@@ -444,7 +442,7 @@ def generate_and_save_gauss_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -459,12 +457,12 @@ def generate_and_save_lotka_volterra_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        alpha = float(body.get('alpha'))
-        beta = float(body.get('beta'))
-        gamma = float(body.get('gamma'))
-        delta = float(body.get('delta'))
-        prey_initial = float(body.get('prey_initial'))
-        predator_initial = float(body.get('predator_initial'))
+        alpha = float(body['formData'].get('alpha'))
+        beta = float(body['formData'].get('beta'))
+        gamma = float(body['formData'].get('gamma'))
+        delta = float(body['formData'].get('delta'))
+        prey_initial = float(body['formData'].get('prey_initial'))
+        predator_initial = float(body['formData'].get('predator_initial'))
 
         # Zaman noktaları
         t = np.linspace(0, 100, 1000)
@@ -503,7 +501,7 @@ def generate_and_save_lotka_volterra_map(request):
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
@@ -514,9 +512,9 @@ def generate_and_save_logistic_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        r = float(body.get('r', 3.9))
-        x0 = float(body.get('x0', 0.5))
-        num_steps = int(body.get('num_steps', 100))
+        r = float(body['formData'].get('r', 3.9))
+        x0 = float(body['formData'].get('x0', 0.5))
+        num_steps = int(body['formData'].get('num_steps', 100))
 
         # Logistic map function
         def logistic_map(r, x0, num_steps):
@@ -548,6 +546,6 @@ def generate_and_save_logistic_map(request):
 
         # Return URL of saved file
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': plot_url})
+        return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
