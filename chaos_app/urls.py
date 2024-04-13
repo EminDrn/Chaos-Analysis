@@ -14,5 +14,9 @@ urlpatterns = [
     path('api/generate_tinkerbell_map/', views.generate_and_save_tinkerbell_map, name='generate_tinkerbell_map'),
     path('api/generate_gingerbread_map/', views.generate_and_save_gingerbread_map, name='generate_gingerbread_map'),
     path('api/generate_logistic_map/', views.generate_and_save_logistic_map, name='generate_logistic_map'),
+
+    path('api/generate_and_save_gauss_map/', views.generate_and_save_gauss_map,name='generate_and_save_gauss_map'),
+    path('api/generate_and_save_lotka_volterra_map/', views.generate_and_save_lotka_volterra_map, name='generate_and_save_lotka_volterra_map'),
+
 ]
 

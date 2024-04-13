@@ -7,7 +7,7 @@ from django.http import JsonResponse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+from scipy.integrate import odeint
 #model import
 from .models import lorenz96_model,bernoulli_map
 
@@ -375,37 +375,6 @@ def generate_and_save_gingerbread_map(request):
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
     
-@csrf_exempt
-def generate_and_save_kuromato_sivashinsky_map(request):
-    if request.method == 'POST':
-        # Parse request body as JSON
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
-
-        alpha = float(body['formData'].get('alpha'))
-        beta = float(body['formData'].get('beta'))
-        L = float(body['formData'].get('L'))
-        T = float(body['formData'].get('T'))
-        N = int(body['formData'].get('N'))
-
-        t, u = solve_kuramoto_sivashinsky(alpha, beta, L, T, N)
-
-        # Dosya yolu
-        file_path = os.path.join('chaos_app', 'maps', 'ks_map.png')
-
-        # Eğer dosya varsa sil
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-        # Grafik çiz ve dosyaya kaydet
-        plot_solution(t, u, L, file_path)
-
-        # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': file_path})
-    else:
-        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-    
 
 @csrf_exempt
 def generate_and_save_gauss_map(request):
@@ -481,7 +450,7 @@ def generate_and_save_lotka_volterra_map(request):
         sol = odeint(model, y0, t)
 
         # Dosya yolu
-        file_path = os.path.join('maps', 'tinkerbell_maps', 'lotka_volterra.png')
+        file_path = os.path.join('chaos_app', 'maps', 'Lotka-Volterra.png')
 
         # Eğer dosya varsa sil
         if os.path.exists(file_path):
