@@ -1,5 +1,7 @@
 import json
 
+import random
+import math
 import numpy as np
 import os
 from django.views.decorators.csrf import csrf_exempt
@@ -516,5 +518,282 @@ def generate_and_save_logistic_map(request):
         # Return URL of saved file
         plot_url = request.build_absolute_uri(file_path)
         return JsonResponse({'plot_url': file_path})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+    
+# KAAN KOÇ
+
+def zaslavskii_rotation_map(x, y, a, k):
+    x_new = x + y + k * np.sin(2 * np.pi * y)
+    y_new = y - a * np.sin(2 * np.pi * x)
+    return x_new, y_new
+
+@csrf_exempt
+def generate_and_save_zaslavskii_map(request):
+    if request.method == 'POST':
+        # İstek gövdesini JSON olarak ayrıştırma
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        a = float(body['formData'].get('a', 0.1))
+        k = float(body['formData'].get('k', 0.1))
+        iterations = int(body['formData'].get('iterations', 10000))
+
+        # Başlangıç koordinatları
+        x, y = 0.1, 0.1
+
+        # Değerleri saklamak için dizi
+        x_values, y_values = np.zeros(iterations + 1), np.zeros(iterations + 1)
+        x_values[0], y_values[0] = x, y
+
+        # İterasyonları yap
+        for i in range(1, iterations + 1):
+            x, y = zaslavskii_rotation_map(x, y, a, k)
+            x_values[i], y_values[i] = x, y
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'zaslavskii_map.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plt.figure(figsize=(8, 8))
+        plt.plot(x_values, y_values, 'b,', markersize=1)
+        plt.title('Zaslavskii Rotation Map')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+    
+
+
+def complex_squaring(z):
+    real_part = z.real ** 2 - z.imag ** 2
+    imag_part = 2 * z.real * z.imag
+    return complex(real_part, imag_part)
+
+@csrf_exempt
+def generate_and_save_complex_squared_map(request):
+    if request.method == 'POST':
+        # İstek gövdesini JSON olarak ayrıştırma
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        real_range = float(body['formData'].get('real_range', 10))
+        imag_range = float(body['formData'].get('imag_range', 10))
+        num_points = int(body['formData'].get('num_points', 100))
+
+        # Karmaşık sayı karesi haritasını oluşturma
+        real_values = [i * real_range / num_points for i in range(-num_points, num_points)]
+        imag_values = [i * imag_range / num_points for i in range(-num_points, num_points)]
+
+        complex_points = [complex(real, imag) for real in real_values for imag in imag_values]
+        squared_points = [complex_squaring(z) for z in complex_points]
+
+        real_parts = [z.real for z in squared_points]
+        imag_parts = [z.imag for z in squared_points]
+
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'complex_squared_map.png')
+
+        # Eğer dosya varsa sil
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Grafik çiz ve dosyaya kaydet
+        plt.figure(figsize=(8, 6))
+        plt.scatter(real_parts, imag_parts, s=5)
+        plt.xlabel('Gerçel Bölüm')
+        plt.ylabel('Sanal Bölüm')
+        plt.title('Karmaşık Sayı Karesi Haritası')
+        plt.grid(True)
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+    
+class Agent:
+    def __init__(self, length):
+        self.params = [random.uniform(1, 4), random.uniform(0.1, 4)]  # (a,b)
+        self.fitness = -1
+
+    def __str__(self):
+        return 'Params: ' + str(self.params) + ' Fitness: ' + str(self.fitness)
+
+def init_agents(population, length):
+    return [Agent(length) for _ in range(population)]
+
+a_vals = []
+b_vals = []
+f_vals = []
+
+@csrf_exempt
+def generate_and_save_genetic_algorithm_map(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        global population
+        global generations
+        global plaintext
+        population = int(body['formData'].get('population', 20))
+        generations = int(body['formData'].get('generations', 100000))
+        plaintext = body['formData'].get('plaintext', 'abcdefghij' * 100)
+
+        def ani_jackard(s1, s2):
+            str1 = [ord(i) for i in s1]
+            str2 = [ord(i) for i in s2]
+
+            str1 = set(str1)
+            str2 = set(str2)
+
+            score = (str1 & str2)
+            score_u = str1 | str2
+
+            return 100 - (len(score) / len(score_u)) * 100
+
+        def fitness(agents):
+            for agent in agents:
+                a = agent.params[0]
+                d = agent.params[1]
+
+                cipher = encrypt(plaintext, a, d)
+                agent.fitness = ani_jackard(plaintext, cipher)
+
+            return agents
+
+        def selection(agents):
+            agents = sorted(agents, key=lambda agent: agent.fitness, reverse=True)
+            agents = agents[:int(0.2 * len(agents))]
+            return agents
+
+        def crossover(agents):
+            offspring = []
+
+            for _ in range((population - len(agents)) // 2):
+                parent1 = random.choice(agents)
+                parent2 = random.choice(agents)
+                child1 = Agent(2)
+                child2 = Agent(2)
+                child1.params = [parent1.params[0], parent2.params[1]]
+                child2.params = [parent2.params[0], parent1.params[1]]
+
+                offspring.append(child1)
+                offspring.append(child2)
+
+            agents.extend(offspring)
+            return agents
+
+        def mutation(agents):
+            for agent in agents:
+                step_a = random.uniform(-0.2, 0.2)
+                step_d = random.uniform(-0.2, 0.2)
+
+                if random.uniform(0.0, 1.0) <= 0.1:
+                    agent.params[0] += step_a
+                    agent.params[1] += step_d
+
+            return agents
+
+        def chaotic_map(n, x_0, y_0, a, d):
+            x = [x_0]
+            y = [y_0]
+
+            for i in range(n - 1):
+                x.append((x[i] + d + (a * math.sin(2 * math.pi * y[i]))) % 1)
+                y.append(1 - a * pow(x[i], 2) + y[i])
+
+            return (x, y)
+
+        def float_to_shuffled_ints(x, y):
+            x_sorted = sorted(x, reverse=True)
+            y_sorted = sorted(y, reverse=True)
+
+            shuffled_x = [x_sorted.index(x_val) for x_val in x]
+            shuffled_y = [y_sorted.index(y_val) for y_val in y]
+
+            key = [shuffled_y[i] for i in shuffled_x]
+            return key
+
+        def encrypt(plaintext, a, d):
+            ascii_lst = [ord(i) for i in plaintext]
+            n = len(ascii_lst)
+
+            ascii_avg = sum(ascii_lst) / n
+            x_0 = ascii_avg / max(ascii_lst)
+            y_0 = 0.2
+            (x, y) = chaotic_map(n, x_0, y_0, a, d)
+
+            private_key = float_to_shuffled_ints(x, y)
+
+            ciphertext = [chr(ascii_lst[i] + private_key[i]) for i in range(len(ascii_lst))]
+            return ''.join(ciphertext)
+
+        def ga():
+            global a_vals, b_vals, f_vals
+            a_vals = []
+            b_vals = []
+            f_vals = []
+            agents = init_agents(population, 2)
+
+            for generation in range(generations):
+                agents = fitness(agents)
+                temp_fitness = [agent.fitness for agent in agents]
+
+                current_max_fitness = max(temp_fitness)
+                count = temp_fitness.count(current_max_fitness)
+
+                if count / len(agents) >= 0.5 and current_max_fitness >= 90:
+                    break
+
+                for agent in agents:
+                    a_vals.append(agent.params[0])
+                    b_vals.append(agent.params[1])
+                    f_vals.append(agent.fitness)
+
+                agents = selection(agents)
+                agents = crossover(agents)
+                agents = mutation(agents)
+
+        # Run the genetic algorithm
+        ga()
+
+        # File path
+        file_path = os.path.join('chaos_app', 'maps', 'genetic_algorithm_map.png')
+
+        # If file exists, delete
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Plot and save to file
+        xlist = np.array(a_vals)
+        ylist = np.array(b_vals)
+        zlist = np.array(f_vals)
+
+        plt.xlabel('Variation of a')
+        plt.ylabel('Variation of b')
+        plt.title('Length of Plaintext: {}'.format(len(plaintext)))
+        scatter = plt.scatter(xlist, ylist, c=zlist)
+        cbar = plt.colorbar(scatter)
+        cbar.set_label("Fitness")
+        plt.savefig(file_path)
+        plt.close()
+
+        # Return URL of saved file
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)

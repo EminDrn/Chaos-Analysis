@@ -18,5 +18,12 @@ urlpatterns = [
     path('api/generate_and_save_gauss_map/', views.generate_and_save_gauss_map,name='generate_and_save_gauss_map'),
     path('api/generate_and_save_lotka_volterra_map/', views.generate_and_save_lotka_volterra_map, name='generate_and_save_lotka_volterra_map'),
 
+    path('api/generate_and_save_zaslavskii_map/', views.generate_and_save_zaslavskii_map, name='generate_and_save_zaslavskii_map'),
+    path('api/generate_and_save_complex_squared_map/', views.generate_and_save_complex_squared_map, name='generate_and_save_complex_squared_map'),
+    path('api/generate_and_save_genetic_algorithm_map/', views.generate_and_save_genetic_algorithm_map, name='generate_and_save_genetic_algorithm_map'),
+
+
+
+
 ]
 
