@@ -23,18 +23,17 @@ from .models import plot_L96_trajectory,plot_bernoulli_map,arnoldcat_map
 @csrf_exempt
 def generate_and_save_tent_map(request):
     if request.method == 'POST':
-        # Parse request body as JSON
-
+        # İstek gövdesini JSON olarak ayrıştır
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
-        x = float(body['formData'].get('x'))
-        r = float(body['formData'].get('r'))
-        iterations = int(body['formData'].get('iterations'))
+        x0 = float(body['formData'].get('x0', 0.1))
+        r = float(body['formData'].get('r', 1.65))
+        iterations = int(body['formData'].get('iterations', 100))
 
-        sequence = [x]
-        for _ in range(iterations - 1):  # Adjust iterations to avoid redundant calculation
-            x = tent_map(x, r)
-            sequence.append(x)
+        sequence = [x0]
+        for _ in range(iterations - 1):
+            x0 = tent_map(x0, r)
+            sequence.append(x0)
 
         # Dosya yolu
         file_path = os.path.join('chaos_app', 'maps', 'tent_map.png')
@@ -44,26 +43,26 @@ def generate_and_save_tent_map(request):
             os.remove(file_path)
 
         # Grafik çiz ve dosyaya kaydet
-        plt.plot(sequence, 'b-', linewidth=0.5)
+        plt.figure(figsize=(10, 6))
+        plt.plot(sequence, 'b-', linewidth=0.5, marker='o', markersize=2)
         plt.title('Tent Map: r = {}'.format(r))
         plt.xlabel('Iteration')
         plt.ylabel('Value')
+        plt.grid(True)
         plt.savefig(file_path)
         plt.close()
 
         # Kaydedilen dosyanın URL'sini döndür
         plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': file_path})
+        return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
 
 def tent_map(x, r):
     if x < 0.5:
         return r * x
     else:
         return r * (1 - x)
-
 
 @csrf_exempt
 def generate_and_save_ikeda_attractor(request):
@@ -128,10 +127,10 @@ def generate_and_save_tinkerbell_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        a = float(body['formData'].get('a'))
-        b = float(body['formData'].get('b'))
-        c = float(body['formData'].get('c'))
-        d = float(body['formData'].get('d'))
+        a = float(body['formData'].get('a' ,0.9))
+        b = float(body['formData'].get('b' , -0.6013))
+        c = float(body['formData'].get('c' , 2.0))
+        d = float(body['formData'].get('d' , 0.50))
         width = int(body['formData'].get('width', 100))
         height = int(body['formData'].get('height', 100))
         iterations = int(body['formData'].get('iterations', 10000))
