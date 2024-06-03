@@ -10,8 +10,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+from django.core.files.base import ContentFile
+from PIL.Image import open as load_pic, new as new_pic
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
 #model import
-from .models import lorenz96_model,bernoulli_map
+from .models import plot_L96_trajectory,plot_bernoulli_map,arnoldcat_map
 
 
 #numpy , django , matplotlib ,  scipy
@@ -262,6 +267,38 @@ def complex_squaring(z):
     return complex(real_part, imag_part)
 
 @csrf_exempt
+def arnoldcat_map_api(request):
+    if request.method == 'POST':
+        # Parse JSON data
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        # Get image data and parameters
+        image_data = body.get('image_data')
+        iterations = int(body.get('iterations', 1))
+        keep_all = bool(body.get('keep_all', False))
+
+        # Save the uploaded image temporarily
+        temp_image_path = 'chaos_app/temp_image.png'
+        image_content = ContentFile(image_data.encode('utf-8'))
+        path = default_storage.save(temp_image_path, image_content)
+
+        # Perform the transformation
+        result_image = arnoldcat_map(path, iterations, keep_all)
+
+        # Save the result image
+        result_image_path = os.path.join('chaos_app', 'transformed_image.png')
+        result_image.save(result_image_path)
+
+        # Build the absolute URL for the result image
+        plot_url = request.build_absolute_uri('/media/' + result_image_path)
+
+        return JsonResponse({'plot_url': plot_url})
+
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)        
+
+@csrf_exempt
 def generate_and_save_bernoulli_map(request):
     if request.method == 'POST':
         # JSON verisini al
@@ -269,15 +306,8 @@ def generate_and_save_bernoulli_map(request):
         body = json.loads(body_unicode)
 
         # Harita oluşturma parametrelerini al
-        r = float(body['formData'].get('r'))
-        x0 = float(body['formData'].get('x0'))
-        num_iterations = int(body['formData'].get('num_iterations'))
-
-        # Bernoulli haritasını oluştur
-        x_values = [x0]
-        for _ in range(num_iterations):
-            x_next = bernoulli_map(x_values[-1], r)
-            x_values.append(x_next)
+        r = float(body.get('r', 4.6))
+        iterations = int(body.get('iterations', 1000))
 
         # Dosya yolu
         file_path = os.path.join('chaos_app', 'maps', 'bernoulli_map.png')
@@ -286,59 +316,43 @@ def generate_and_save_bernoulli_map(request):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        # Grafik çiz ve dosyaya kaydet
-        plt.plot(x_values, 'b-', lw=0.5)
-        plt.title('Bernoulli Map: r = {}'.format(r))
-        plt.xlabel('Iteration')
-        plt.ylabel('Value')
-        plt.savefig(file_path)
-        plt.close()
+        # Bernoulli haritasını oluştur ve dosyaya kaydet
+        plot_bernoulli_map(r=r, iterations=iterations, file_path=file_path)
 
         # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': file_path})
+        plot_url = request.build_absolute_uri('/media/maps/bernoulli_map.png')
+        return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
-
 @csrf_exempt
-def generate_and_save_lorenz96_map(request):
+def generate_and_save_L96_trajectory(request):
     if request.method == 'POST':
         # JSON verisini al
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        # Model parametrelerini al
-        N = int(body['formData'].get('N', 40))  # Varsayılan olarak 40
-        F = float(body['formData'].get('F', 8.0))  # Varsayılan olarak 8.0
-        dt = float(body['formData'].get('dt', 0.01))  # Varsayılan olarak 0.01
-        num_steps = int(body['formData'].get('num_steps', 1000))  # Varsayılan olarak 1000
-
-        # Modeli çalıştır ve verileri sakla
-        data = lorenz96_model(N, F, dt, num_steps)
+        # Parametreleri al
+        N = int(body.get('N', 5))
+        F = float(body.get('F', 8))
+        x0 = body.get('x0', None)
+        t_range = body.get('t_range', [0.0, 30.0, 0.01])
 
         # Dosya yolu
-        file_path = os.path.join('chaos_app', 'maps', 'lorenz96_map.png')
+        file_path = os.path.join('chaos_app', 'maps', 'L96_trajectory.png')
 
         # Eğer dosya varsa sil
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        # Grafik çiz ve dosyaya kaydet
-        plt.imshow(data, aspect='auto', cmap='jet')
-        plt.colorbar()
-        plt.title('Lorenz 96 Map')
-        plt.xlabel('Time Step')
-        plt.ylabel('Variable Index')
-        plt.savefig(file_path)
-        plt.close()
+        # L96 modelini çiz ve dosyaya kaydet
+        plot_L96_trajectory(N=N, F=F, x0=x0, t_range=t_range, file_path=file_path)
 
         # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
-        return JsonResponse({'plot_url': file_path})
+        plot_url = request.build_absolute_uri('/media/maps/L96_trajectory.png')
+        return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
 
 @csrf_exempt
 
@@ -855,3 +869,5 @@ def generate_and_save_genetic_algorithm_map(request):
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+        
+
