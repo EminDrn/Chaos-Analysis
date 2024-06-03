@@ -401,54 +401,51 @@ def poincare_map_view(request):
     image_url = request.build_absolute_uri(settings.MEDIA_URL + 'maps/poincare_map.png')
     return JsonResponse({'url': image_url})
 
-
 @csrf_exempt
-def generate_and_save_gingerbread_map(request):
+def generate_and_save_gingerbread_man(request):
     if request.method == 'POST':
-        # Parse request body as JSON
+        # İstek gövdesini JSON olarak ayrıştır
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
+        x = float(body['formData'].get('x', 0.1))
+        y = float(body['formData'].get('y', -0.1))
+        a = float(body['formData'].get('a', 1))
+        b = float(body['formData'].get('b', 1))
+        iterations = int(body['formData'].get('iterations', 50000))
 
-        iterations = int(body['formData'].get('iterations', 10000))
-        x_start = float(body['formData'].get('x_start', 0.1))
-        y_start = float(body['formData'].get('y_start', 0.1))
-
-        # Gingerbread map function
-        def gingerbread_map(x, y):
-            x_next = 1 - y + abs(x)
-            y_next = x
-            return x_next, y_next
-
-        x = x_start
-        y = y_start
-
-        x_points = [x]
-        y_points = [y]
+        # Çizim alanı ve iterasyonlar
+        plt.figure(figsize=(8, 6))
+        plt.xlim(-10, 10)
+        plt.ylim(-10, 10)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.title('Gingerbread Man Haritası')
 
         for _ in range(iterations):
-            x, y = gingerbread_map(x, y)
-            x_points.append(x)
-            y_points.append(y)
+            dx = 1 - a * y + b * abs(x)
+            dy = x
+            x = dx
+            y = dy
+            plt.plot(x * 10, y * 10, 'b.', markersize=1)
 
-        # File path
-        file_path = os.path.join('chaos_app', 'maps', 'gingerbread_map.png')
+        # Dosya yolu
+        file_path = os.path.join('chaos_app', 'maps', 'gingerbread_man.png')
 
-        # If file exists, delete
+        # Eğer dosya varsa sil
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        # Plot and save to file
-        plt.figure(figsize=(8, 8))
-        plt.plot(x_points, y_points, 'o-', markersize=1, alpha=0.5)
-        plt.title('Gingerbread Man Haritası')
+        # Grafik çiz ve dosyaya kaydet
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.grid(True)
         plt.savefig(file_path)
         plt.close()
 
-        # Return URL of saved file
-        return JsonResponse({'plot_url': file_path})
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-    
 
 @csrf_exempt
 def generate_and_save_gauss_map(request):
