@@ -21,9 +21,7 @@ urlpatterns = [
     path('api/generate_and_save_zaslavskii_map/', views.generate_and_save_zaslavskii_map, name='generate_and_save_zaslavskii_map'),
     path('api/generate_and_save_complex_squared_map/', views.generate_and_save_complex_squared_map, name='generate_and_save_complex_squared_map'),
     path('api/generate_and_save_genetic_algorithm_map/', views.generate_and_save_genetic_algorithm_map, name='generate_and_save_genetic_algorithm_map'),
-
-
-
+    path('api/generate_and_save_ikeda_attractor/', views.generate_and_save_ikeda_attractor , name="generate_and_save_ikeda_attractor")
 
 ]
 

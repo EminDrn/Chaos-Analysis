@@ -14,6 +14,7 @@ from scipy.integrate import odeint
 from .models import lorenz96_model,bernoulli_map
 
 
+#numpy , django , matplotlib ,  scipy
 @csrf_exempt
 def generate_and_save_tent_map(request):
     if request.method == 'POST':
@@ -57,6 +58,63 @@ def tent_map(x, r):
         return r * x
     else:
         return r * (1 - x)
+
+
+@csrf_exempt
+def generate_and_save_ikeda_attractor(request):
+    if request.method == 'POST':
+        # Parse request body as JSON
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        x0 = float(body['formData'].get('x0', 0.1))
+        y0 = float(body['formData'].get('y0', 0.1))
+        u = float(body['formData'].get('u', 0.9))
+        iterations = int(body['formData'].get('iterations', 10000))
+
+        x_values, y_values = plot_ikeda_attractor(x0, y0, u, iterations)
+
+        # File path
+        file_path = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
+
+        # Remove file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Plot and save the image
+        plt.figure(figsize=(8, 6))
+        plt.plot(x_values, y_values, '.', markersize=0.5)
+        plt.title('Ikeda Chaotic Attractor')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.savefig(file_path)
+        plt.close()
+
+        # Return the saved file URL
+        plot_url = request.build_absolute_uri(file_path)
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+
+def plot_ikeda_attractor(x0=0.1, y0=0.1, u=0.9, iterations=10000):
+    def ikeda_map(x, y, u):
+        t = 0.4 - 6 / (1 + x ** 2 + y ** 2)
+        x_next = 1 + u * (x * np.cos(t) - y * np.sin(t))
+        y_next = u * (x * np.sin(t) + y * np.cos(t))
+        return x_next, y_next
+
+    x_values = [x0]
+    y_values = [y0]
+    for _ in range(iterations):
+        x, y = ikeda_map(x_values[-1], y_values[-1], u)
+        x_values.append(x)
+        y_values.append(y)
+
+    return x_values, y_values
+
+
+
+
 
 @csrf_exempt
 def generate_and_save_tinkerbell_map(request):
