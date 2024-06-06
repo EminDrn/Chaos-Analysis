@@ -55,7 +55,7 @@ MIDDLEWARE = [
 
 ]
 CORS_ALLOW_ALL_ORIGINS = True
-
+CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'chaos_project.urls'
 
 TEMPLATES = [

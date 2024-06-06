@@ -53,7 +53,7 @@ def generate_and_save_tent_map(request):
         plt.close()
 
         # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
+        plot_url = os.path.join('chaos_app', 'maps', 'tent_map.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
@@ -93,8 +93,8 @@ def generate_and_save_ikeda_attractor(request):
         plt.savefig(file_path)
         plt.close()
 
-        # Return the saved file URL
-        plot_url = request.build_absolute_uri(file_path)
+        # Return the saved file relative path
+        plot_url = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
@@ -286,16 +286,15 @@ def arnoldcat_map_api(request):
         result_image = arnoldcat_map(path, iterations, keep_all)
 
         # Save the result image
-        result_image_path = os.path.join('chaos_app', 'transformed_image.png')
+        result_image_path = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
         result_image.save(result_image_path)
 
-        # Build the absolute URL for the result image
-        plot_url = request.build_absolute_uri('/media/' + result_image_path)
-
+        # Return the saved file relative path
+        plot_url = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
         return JsonResponse({'plot_url': plot_url})
 
     else:
-        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)        
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
 @csrf_exempt
 def generate_and_save_bernoulli_map(request):
@@ -318,8 +317,8 @@ def generate_and_save_bernoulli_map(request):
         # Bernoulli haritasını oluştur ve dosyaya kaydet
         plot_bernoulli_map(r=r, iterations=iterations, file_path=file_path)
 
-        # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri('/media/maps/bernoulli_map.png')
+        # Kaydedilen dosyanın göreli URL'sini döndür
+        plot_url = os.path.join('chaos_app', 'maps', 'bernoulli_map.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
@@ -347,14 +346,12 @@ def generate_and_save_L96_trajectory(request):
         # L96 modelini çiz ve dosyaya kaydet
         plot_L96_trajectory(N=N, F=F, x0=x0, t_range=t_range, file_path=file_path)
 
-        # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri('/media/maps/L96_trajectory.png')
+        # Kaydedilen dosyanın göreli dosya yolunu döndür
+        plot_url = os.path.join('chaos_app', 'maps', 'L96_trajectory.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
 @csrf_exempt
-
 def lorenz_map(request):
     # Lorenz çekicisini çiz
     image_path = os.path.join(settings.MEDIA_ROOT, 'maps', 'map.png')
