@@ -864,3 +864,151 @@ def generate_and_save_genetic_algorithm_map(request):
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
         
 
+
+
+# bifurkasyon.py içeriği
+
+import numpy as np
+import matplotlib.pyplot as plt
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+import os
+
+@csrf_exempt
+def generate_and_save_bifurcation(request):
+    if request.method == 'POST':
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        r_min = float(body['formData'].get('r_min', 2.5))
+        r_max = float(body['formData'].get('r_max', 4.0))
+        num_r = int(body['formData'].get('num_r', 1000))
+        iterations = int(body['formData'].get('iterations', 1000))
+        last = int(body['formData'].get('last', 100))
+
+        r_values = np.linspace(r_min, r_max, num_r)
+        x = 1e-5 * np.ones(num_r)
+
+        result = []
+        for _ in range(iterations):
+            x = r_values * x * (1 - x)
+            if _ >= (iterations - last):
+                result.append(np.copy(x))
+
+        x_vals = np.array(result).T
+
+        file_path = os.path.join('chaos_app', 'maps', 'bifurcation_map.png')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(r_values, x_vals, ',k', alpha=0.25)
+        plt.title('Bifurcation Diagram')
+        plt.xlabel('r')
+        plt.ylabel('x')
+        plt.grid(True)
+        plt.savefig(file_path)
+        plt.close()
+
+        plot_url = os.path.join('chaos_app', 'maps', 'bifurcation_map.png')
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+# lorenz_cekici.py içeriği
+
+import numpy as np
+import matplotlib.pyplot as plt
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+import os
+from scipy.integrate import odeint
+
+@csrf_exempt
+def generate_and_save_lorenz(request):
+    if request.method == 'POST':
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        sigma = float(body['formData'].get('sigma', 10.0))
+        beta = float(body['formData'].get('beta', 2.667))
+        rho = float(body['formData'].get('rho', 28.0))
+        num_steps = int(body['formData'].get('num_steps', 10000))
+        dt = float(body['formData'].get('dt', 0.01))
+
+        def lorenz(X, t, sigma, beta, rho):
+            x, y, z = X
+            dx_dt = sigma * (y - x)
+            dy_dt = x * (rho - z) - y
+            dz_dt = x * y - beta * z
+            return [dx_dt, dy_dt, dz_dt]
+
+        t = np.linspace(0, num_steps*dt, num_steps)
+        X0 = [0.0, 1.0, 1.05]
+        X = odeint(lorenz, X0, t, args=(sigma, beta, rho))
+
+        file_path = os.path.join('chaos_app', 'maps', 'lorenz_attractor.png')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(X[:,0], X[:,1], X[:,2], lw=0.5)
+        ax.set_title('Lorenz Attractor')
+        plt.savefig(file_path)
+        plt.close()
+
+        plot_url = os.path.join('chaos_app', 'maps', 'lorenz_attractor.png')
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
+#poinecare_map içeriği
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import json
+
+@csrf_exempt
+def generate_poincare_map(request):
+    if request.method == 'POST':
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        omega = float(body['formData'].get('omega', 1.0))
+        F = float(body['formData'].get('F', 0.5))
+        phi = float(body['formData'].get('phi', 0.0))
+        t_max = float(body['formData'].get('t_max', 100.0))
+        dt = float(body['formData'].get('dt', 0.01))
+
+        def poincare_map(t, x):
+            return x[1], F * np.sin(omega * t + phi) - 0.2 * x[1] - x[0]
+
+        t_values = np.arange(0, t_max, dt)
+        x = np.zeros((len(t_values), 2))
+        for i, t in enumerate(t_values[:-1]):
+            k1 = np.array(poincare_map(t, x[i]))
+            k2 = np.array(poincare_map(t + dt / 2, x[i] + dt / 2 * k1))
+            k3 = np.array(poincare_map(t + dt / 2, x[i] + dt / 2 * k2))
+            k4 = np.array(poincare_map(t + dt, x[i] + dt * k3))
+            x[i + 1] = x[i] + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(x[:, 0], x[:, 1], 'b-', linewidth=0.5, marker='o', markersize=2)
+        plt.title('Poincaré Map')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.grid(True)
+
+        file_path = os.path.join('chaos_app', 'maps', 'poincare_map.png')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        plt.savefig(file_path)
+        plt.close()
+        
+        plot_url = os.path.join('chaos_app', 'maps', 'poincare_map.png')
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
