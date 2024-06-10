@@ -25,8 +25,8 @@ urlpatterns = [
     path('api/generate_and_save_ikeda_attractor/', views.generate_and_save_ikeda_attractor , name="generate_and_save_ikeda_attractor"),
     path('api/generate_and_save_gingerbread_man/', views.generate_and_save_gingerbread_man,
          name="generate_and_save_gingerbread_man"), 
-    path('api/generate_bifurcation_diagram/', views.generate_bifurcation_diagram, name="generate_bifurcation_diagram"),
-    path('api/generate_lorenz_attractor/', views.generate_lorenz_attractor, name="generate_lorenz_attractor"),
+    path('api/generate_bifurcation_diagram/', views.generate_and_save_bifurcation, name="generate_bifurcation_diagram"),
+    path('api/generate_lorenz_attractor/', views.generate_and_save_lorenz, name="generate_lorenz_attractor"),
     path('api/generate_poincare_map/', views.generate_poincare_map, name="generate_poincare_map"),
 
 ]

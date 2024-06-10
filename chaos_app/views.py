@@ -21,6 +21,7 @@ from .models import plot_L96_trajectory,plot_bernoulli_map,arnoldcat_map
 
 #numpy , django , matplotlib ,  scipy
 @csrf_exempt
+#*
 def generate_and_save_tent_map(request):
     if request.method == 'POST':
         # İstek gövdesini JSON olarak ayrıştır
@@ -63,7 +64,7 @@ def tent_map(x, r):
         return r * x
     else:
         return r * (1 - x)
-
+#*
 @csrf_exempt
 def generate_and_save_ikeda_attractor(request):
     if request.method == 'POST':
@@ -119,7 +120,7 @@ def plot_ikeda_attractor(x0=0.1, y0=0.1, u=0.9, iterations=10000):
 
 
 
-
+#*
 @csrf_exempt
 def generate_and_save_tinkerbell_map(request):
     if request.method == 'POST':
@@ -169,7 +170,7 @@ def generate_and_save_tinkerbell_map(request):
         return JsonResponse({'plot_url': file_path})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
+#*
 @csrf_exempt
 def generate_and_save_logistic_map(request):
     if request.method == 'POST':
@@ -177,9 +178,9 @@ def generate_and_save_logistic_map(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        r = float(body['formData'].get('r'))
-        x0 = float(body['formData'].get('x0'))
-        iterations = int(body['formData'].get('iterations'))
+        r = float(body['formData'].get('r',3.9))
+        x0 = float(body['formData'].get('x0',0.5))
+        iterations = int(body['formData'].get('iterations',100))
 
         values = np.zeros(iterations + 1)
         values[0] = x0
@@ -212,7 +213,7 @@ def generate_and_save_logistic_map(request):
 def logistic_map(r, x):
     return r * x * (1 - x)
 
-
+#*
 @csrf_exempt
 def generate_and_save_complex_squaring_map(request):
     if request.method == 'POST':
@@ -221,9 +222,9 @@ def generate_and_save_complex_squaring_map(request):
         body = json.loads(body_unicode)
 
         # Harita oluşturma parametrelerini al
-        real_range = float(body['formData'].get('real_range'))
-        imag_range = float(body['formData'].get('imag_range'))
-        num_points = int(body['formData'].get('num_points'))
+        real_range = float(body['formData'].get('real_range',10))
+        imag_range = float(body['formData'].get('imag_range',10))
+        num_points = int(body['formData'].get('num_points',100))
 
         # Karmaşık sayıları oluştur
         real_values = np.linspace(-real_range, real_range, num_points)
@@ -295,7 +296,7 @@ def arnoldcat_map_api(request):
 
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
+#*
 @csrf_exempt
 def generate_and_save_bernoulli_map(request):
     if request.method == 'POST':
@@ -322,7 +323,7 @@ def generate_and_save_bernoulli_map(request):
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-
+#*
 @csrf_exempt
 def generate_and_save_L96_trajectory(request):
     if request.method == 'POST':
@@ -351,6 +352,7 @@ def generate_and_save_L96_trajectory(request):
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
+
 @csrf_exempt
 def lorenz_map(request):
     # Lorenz çekicisini çiz
@@ -592,7 +594,7 @@ def zaslavskii_rotation_map(x, y, a, k):
     x_new = x + y + k * np.sin(2 * np.pi * y)
     y_new = y - a * np.sin(2 * np.pi * x)
     return x_new, y_new
-
+#*
 @csrf_exempt
 def generate_and_save_zaslavskii_map(request):
     if request.method == 'POST':
@@ -633,7 +635,7 @@ def generate_and_save_zaslavskii_map(request):
         plt.close()
 
         # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
+        plot_url = os.path.join('chaos_app', 'maps', 'zaslavskii_map.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
@@ -703,7 +705,7 @@ def init_agents(population, length):
 a_vals = []
 b_vals = []
 f_vals = []
-
+#*
 @csrf_exempt
 def generate_and_save_genetic_algorithm_map(request):
     if request.method == 'POST':
@@ -858,7 +860,7 @@ def generate_and_save_genetic_algorithm_map(request):
         plt.close()
 
         # Return URL of saved file
-        plot_url = request.build_absolute_uri(file_path)
+        plot_url = os.path.join('chaos_app', 'maps', 'genetic_algorithm_map.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
@@ -874,7 +876,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import os
-
+#*
 @csrf_exempt
 def generate_and_save_bifurcation(request):
     if request.method == 'POST':
@@ -924,7 +926,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import os
 from scipy.integrate import odeint
-
+#*
 @csrf_exempt
 def generate_and_save_lorenz(request):
     if request.method == 'POST':
@@ -970,7 +972,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import json
-
+#*
 @csrf_exempt
 def generate_poincare_map(request):
     if request.method == 'POST':
