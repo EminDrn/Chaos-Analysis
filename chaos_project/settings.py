@@ -57,6 +57,16 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'chaos_project.urls'
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '[::1]'
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+]
+
 
 TEMPLATES = [
     {

@@ -266,36 +266,7 @@ def complex_squaring(z):
     imag_part = 2 * z.real * z.imag
     return complex(real_part, imag_part)
 
-@csrf_exempt
-def arnoldcat_map_api(request):
-    if request.method == 'POST':
-        # Parse JSON data
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
 
-        # Get image data and parameters
-        image_data = body.get('image_data')
-        iterations = int(body.get('iterations', 1))
-        keep_all = bool(body.get('keep_all', False))
-
-        # Save the uploaded image temporarily
-        temp_image_path = 'chaos_app/temp_image.png'
-        image_content = ContentFile(image_data.encode('utf-8'))
-        path = default_storage.save(temp_image_path, image_content)
-
-        # Perform the transformation
-        result_image = arnoldcat_map(path, iterations, keep_all)
-
-        # Save the result image
-        result_image_path = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
-        result_image.save(result_image_path)
-
-        # Return the saved file relative path
-        plot_url = os.path.join('chaos_app', 'maps', 'ikeda_attractor.png')
-        return JsonResponse({'plot_url': plot_url})
-
-    else:
-        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 #*
 @csrf_exempt
 def generate_and_save_bernoulli_map(request):
@@ -323,7 +294,7 @@ def generate_and_save_bernoulli_map(request):
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
-#*
+
 @csrf_exempt
 def generate_and_save_L96_trajectory(request):
     if request.method == 'POST':
@@ -331,11 +302,29 @@ def generate_and_save_L96_trajectory(request):
         body_unicode = request.body.decode('utf-8')
         body = json.loads(body_unicode)
 
-        # Parametreleri al
+        # Model parametrelerini al
         N = int(body.get('N', 5))
-        F = float(body.get('F', 8))
-        x0 = body.get('x0', None)
-        t_range = body.get('t_range', [0.0, 30.0, 0.01])
+        F = float(body.get('F', 8.0))
+        t_start = float(body.get('t_start', 0.0))
+        t_end = float(body.get('t_end', 30.0))
+        t_step = float(body.get('t_step', 0.01))
+
+        # Başlangıç koşullarını al
+        x0 = body.get('x0', [F] * N)
+        if len(x0) != N:
+            return JsonResponse({'error': 'Length of x0 must be equal to N'}, status=400)
+
+        # Lorenz 96 modelini tanımla
+        def L96(x, t):
+            d = np.zeros(N)
+            for i in range(N):
+                d[i] = (x[(i + 1) % N] - x[i - 2]) * x[i - 1] - x[i] + F
+            return d
+
+        t = np.arange(t_start, t_end, t_step)  # Zaman dizisini oluştur
+
+        # ODE'yi çöz
+        x = odeint(L96, x0, t)
 
         # Dosya yolu
         file_path = os.path.join('chaos_app', 'maps', 'L96_trajectory.png')
@@ -344,30 +333,69 @@ def generate_and_save_L96_trajectory(request):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        # L96 modelini çiz ve dosyaya kaydet
-        plot_L96_trajectory(N=N, F=F, x0=x0, t_range=t_range, file_path=file_path)
+        # 3D plot oluştur ve dosyaya kaydet
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        ax.plot(x[:, 0], x[:, 1], x[:, 2])
+        ax.set_xlabel("$x_1$")
+        ax.set_ylabel("$x_2$")
+        ax.set_zlabel("$x_3$")
+        plt.title("Lorenz 96 Model Trajectory")
+        plt.savefig(file_path)
+        plt.close()
 
-        # Kaydedilen dosyanın göreli dosya yolunu döndür
+        # Kaydedilen dosyanın URL'sini döndür
         plot_url = os.path.join('chaos_app', 'maps', 'L96_trajectory.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 
+
 @csrf_exempt
-def lorenz_map(request):
-    # Lorenz çekicisini çiz
-    image_path = os.path.join(settings.MEDIA_ROOT, 'maps', 'map.png')
-    lorenz_plt()
-    
-    # Grafik dosyasını kaydet
-    plt.savefig(image_path)
-    plt.close()
+def generate_and_save_henon_map(request):
+    if request.method == 'POST':
+        # JSON verisini al
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
 
-    # Oluşturulan dosyanın URL'ini döndür
-    image_url = request.build_absolute_uri(settings.MEDIA_URL + 'maps/map.png')
-    return JsonResponse({'url': image_url})
+        # Parametreleri al
+        x0 = float(body.get('x0', 0.1))
+        y0 = float(body.get('y0', 0.1))
+        a = float(body.get('a', 1.4))
+        b = float(body.get('b', 0.3))
+        num_iterations = int(body.get('num_iterations', 10000))
 
+        # Dosya yolu
+        directory = os.path.join('chaos_app', 'maps')
+        file_path = os.path.join(directory, 'henon_map.png')
 
+        # Eğer dosya dizini yoksa oluştur
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Henon Map'i oluştur ve kaydet
+        x = np.zeros(num_iterations)
+        y = np.zeros(num_iterations)
+        x[0], y[0] = x0, y0
+
+        # Iterate Henon map equations
+        for n in range(1, num_iterations):
+            x[n] = 1 - a * x[n - 1] ** 2 + y[n - 1]
+            y[n] = b * x[n - 1]
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(x, y, ',k', alpha=0.5)
+        plt.title("Henon Map")
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.savefig(file_path)
+        plt.close()
+
+        # Kaydedilen dosyanın URL'sini döndür
+        plot_url =  os.path.join('chaos_app', 'maps', 'henon_map.png')
+        return JsonResponse({'plot_url': plot_url})
+    else:
+        return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
 @csrf_exempt
 def poincare_map(time_series, delay):
     poincare_points = []
@@ -440,7 +468,7 @@ def generate_and_save_gingerbread_man(request):
         plt.close()
 
         # Kaydedilen dosyanın URL'sini döndür
-        plot_url = request.build_absolute_uri(file_path)
+        plot_url = os.path.join('chaos_app', 'maps', 'gingerbread_man.png')
         return JsonResponse({'plot_url': plot_url})
     else:
         return JsonResponse({'error': 'Only POST requests are supported for this endpoint.'}, status=400)
